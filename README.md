@@ -7,7 +7,7 @@ The script reads an exported whatsapp chat and then extracts the data. You may n
 ![](https://i.imgur.com/8kqBa4I.png)
 
 ### Requirements
-- Python 2.7+ or Python 3
+- Python 2.7+ or Python 3 
 ```python
 pip install pandas emoji seaborn matplotlib numpy wordcloud 
 ```
