@@ -1,0 +1,30 @@
+2019-03-19 00:05:15 WARN  NativeCodeLoader:62 - Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2019-03-19 00:05:20 WARN  TaskSetManager:66 - Stage 0 contains a task of very large size (498 KB). The maximum recommended task size is 100 KB.
+/Users/mnaeem01/PycharmProjects/WhatsApp
+List of Messages 17117
++--------------------+-----+
+|                user|count|
++--------------------+-----+
+|Pak Islamia High ...|    1|
+|    +971 55 519 8273|    1|
+|Yasir Huda change...|    1|
+|Abdullah Ataullah...|    1|
+|Kashif Aqeel adde...|    1|
+|Kazim Reza change...|    1|
+|Khurram Naeem cha...|    1|
+|Kazim Reza added ...|    1|
+|    +971 55 254 1069|    2|
+|     +44 7481 611811|    2|
+|         Fahid Ihsan|    3|
+|     +44 7462 553297|    5|
+|              Sheraz|    8|
+|   +1 (971) 533‑3792|   10|
+|       Kashif Rehman|   28|
+|       Kamran Sarwar|   30|
+|      Khurram Khatri|   34|
+|         Saad Arshad|   53|
+|       Ishrat Zarait|   68|
+|     +92 300 8492016|   73|
++--------------------+-----+
+only showing top 20 rows
+

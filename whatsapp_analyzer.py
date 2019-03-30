@@ -1,14 +1,29 @@
 import io
 import sys
+import re
+import pandas as pd
+import emoji
+from collections import Counter
+from dateutil import parser
+import operator
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud
 
     
 def replace_bad_character(line):
-    return line.strip().replace(u"\u202a", "").replace(u"\u200e", "").replace(u"\u202c", "").replace(u"\xa0", " ")
+    return line.strip().replace(u"\u202a", "").replace(u"\u200e", "").replace(u"\u202c", "")#.replace(u"\xa0", " ")
+#    return line.strip().replace(u"\u202a", "").replace(u"\u200e", "").replace(u"\u202c", "").replace(u"\xa0", " ")
 
-try: 
-    filepath = raw_input("Please input the chat filepath:")
-except NameError:
-    filepath = input("Please input chat filepath:")
+
+# try:
+#     filepath = raw_input("Please input the chat filepath:")
+# except NameError:
+#
+
+
+filepath = "data/_chatFamilyMen.txt"
 
 try:
     with io.open(filepath, "r", encoding="utf-8") as file:
@@ -19,30 +34,7 @@ except IOError as e:
     sys.exit()
 
 common_words = []
-cw_filepath = ""
-
-cw_option = "Please select common word file or leave it blank to escape: \n\
-    1: Indonesian (id_cw.py)\n\
-    2: English (en_cw.py)\n\
-    3: Custom file\n\
-    4: Skip common word\n"
-try: 
-    cw = raw_input(cw_option)
-except NameError:
-    cw = input(cw_option)
-    
-if cw == "1":
-    cw_filepath = "id_cw"
-elif cw == "2":
-    cw_filepath = "en_cw"
-elif cw == "3":
-    """
-    Prompt user to input the file path
-    """
-    try: 
-        cw_filepath = raw_input("Please input your common word filepath")
-    except NameError:
-        cw_filepath = input("Please input your common word filepath")
+cw_filepath = "en_cw"
 
 
 if len(cw_filepath) > 0:
@@ -62,21 +54,7 @@ except NameError:
     verbose = input("You wanna print the verbose mode? y/[N]: ") == "y" or False
 
 
-import re
-import errno
-import pandas as pd
-import emoji
-from collections import Counter
-from dateutil import parser
-import operator
-import numpy as np
-import matplotlib as mpl
-#mpl.use('MacOSX')
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
-import seaborn as sns
-from wordcloud import WordCloud
+
 # %matplotlib inline
 
 
@@ -450,7 +428,7 @@ Top Member Chat
 top_member = chat_per_member.head(20)
 if not top_member.empty:
     sns.set()
-    member_plot = top_member.plot(kind='bar', legend=None, title="Top 20 active member", figsize=(18, 6), color="purple")
+    member_plot = top_member.plot(kind='bar', legend=None, title=None, figsize=(6, 18), color="green")
     member_plot.set_xlabel("Member (phone number/contact name)")
     member_plot.set_ylabel("Chat Count")
     for i, v in enumerate(top_member["chat_count"]):
@@ -465,7 +443,7 @@ heatmap_df = pd.DataFrame(heat_map)
 if not heatmap_df.empty:
     grouped_heatmap = heatmap_df.groupby(["day", "hour"]).sum().sort_values(by=["chat_count"], ascending=False)
     pivoted_heatmap = pd.pivot_table(grouped_heatmap, values='chat_count', index=['day'], columns=['hour'])
-    plt.figure(figsize = (16,5))
+    plt.figure(figsize = (5,16))
     sns.heatmap(pivoted_heatmap, 
                 annot=True, 
                 fmt=".0f", 
@@ -477,6 +455,8 @@ if not heatmap_df.empty:
     plt.show()
 else:
     print("This chat does not contain any datetime")
+
+
 
 s_attachments = sorted(attachments.items(), key = operator.itemgetter(1), reverse=True)
 if s_attachments:
@@ -529,12 +509,12 @@ Wordcloud
 """
 if chat_words:
     wordcloud = WordCloud(
-        width = 1000, 
-        height = 500,
+        width = 500,
+        height = 1000,
         background_color = "white"
     ).generate(chat_words)
 
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=(8,15))
     plt.imshow(wordcloud)
     plt.axis("off")
     plt.show()
