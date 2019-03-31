@@ -7,6 +7,8 @@ import sys
 from datetime import datetime
 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot, draw, show, ion
+
 import numpy as np
 import pandas as pd
 import pytz
@@ -14,6 +16,11 @@ import seaborn as sns
 from wordcloud import WordCloud
 
 logging.basicConfig(level=logging.INFO)
+
+
+# file from Whatsapp export.
+filepath = "data/_chat.txt"
+content = ""
 
 common_words = []
 cw_filepath = "en_urdu_cw"
@@ -23,10 +30,8 @@ focus_month_end = '2019-04-01'
 time_between_conv_mins = 15
 
 if len(cw_filepath) > 0:
-
     try:
         common_words = __import__(cw_filepath, globals(), locals(), [common_words]).common_words
-
     except:
         print("Error getting common word file location")
         sys.exit()
@@ -42,9 +47,15 @@ def replace_names(line):
 
 # remove non alphanumeric content
 def get_words(msg):
-    regex = re.sub(r"[^a-z\s]+", "", msg.lower())
-    regex = re.sub(r'[^\x00-\x7f]', r'', regex)
-    #words = regex.split(" ")
+    #if message is longer than 450 characters dont use it for cloud map. Its most probably a forward.
+    if (len(msg)<450):
+        regex = re.sub(r"[^a-z\s]+", "", msg.lower())
+        regex = re.sub(r'[^\x00-\x7f]', r'', regex)
+        #words = regex.split(" ")
+    else:
+        logging.debug("Length of msg %s", len(msg))
+        logging.debug(msg)
+        regex= "omitted"
     return regex
 
 
@@ -58,9 +69,7 @@ def convert_est_to_gst_tz(time_of_message_in_est):
     logging.debug("GST Time of Message: %s", time_of_message_in_gst)
     return time_of_message_in_gst
 
-# file from Whatsapp export.
-filepath = "data/_chat.txt"
-content = ""
+
 
 logging.debug("Parsing csv file:%s", os.path.abspath(filepath))
 
@@ -71,6 +80,10 @@ try:
 except IOError as e:
     logging.error("Current Path %s", os.getcwd())
     logging.error("File %s not found. Please recheck your file location.", filepath)
+    sys.exit()
+
+if len(content) == 0:
+    print("File is empty?")
     sys.exit()
 
 pattern = re.compile(r"""^\[(.*?)\]\s+(.*?):\s+(.*?)
@@ -103,6 +116,7 @@ df_pd['conversation'] = (df_pd.reply_time > time_between_conv_mins).cumsum().shi
 df_pd['fwd_messages'] = (df_pd['message'].str.contains("omitted|http").fillna(0).astype(int))
 df_pd['actual_messages'] = ((~df_pd['message'].str.contains("omitted|http")).fillna(0).astype(int))
 
+
 logging.debug(df_pd)
 df_group_by_conv = df_pd.groupby('conversation').agg({'date': ['min', 'max', 'count'],
                                                       'user': ['first', 'unique', 'nunique']
@@ -133,7 +147,7 @@ if not df_group_by_conv_unique_user.empty:
         member_plot.text(i - .15, v + .15, v, color="black")
     plt.title('Ungals in March')
     plt.legend()
-    plt.show()
+    draw()
 
 group_by_day = df_pd.groupby(df_pd['date'].map(lambda x: x.date())).count()[['message']]
 
@@ -156,13 +170,14 @@ if not group_by_day.empty:
     group_by_day_plot = group_by_day.plot(kind='bar', facecolor='red')
     for i, v in enumerate(group_by_day["message"]):
         group_by_day_plot.text(i - .15, v + .15, v, color="black")
-    plt.show()
+    draw()
 
 """
 Plot User counts.
 """
 group_by_user = df_pd.groupby(df_pd['user']).sum() \
     [['actual_messages', 'fwd_messages']].sort_values('actual_messages', ascending=False).head(15)
+
 
 if not group_by_user.empty:
     sns.set()
@@ -173,7 +188,21 @@ if not group_by_user.empty:
         # if (v_fwd > 5):
         group_by_user_plot.text(i - .15, v_total + 10, v_fwd)
         group_by_user_plot.text(i - .15, v_act - 15, v_act, rotation=90)
-    plt.show()
+    draw()
+
+group_by_user_fwds_df = group_by_user
+group_by_user_fwds_df['fwds_ratio'] = group_by_user.apply(lambda x: int((x['fwd_messages']/(x['fwd_messages'] + x['actual_messages']))*100), axis=1)
+group_by_user_fwds_df = group_by_user_fwds_df.sort_values(['fwds_ratio'], ascending=False).reset_index()
+logging.info(group_by_user_fwds_df)
+
+if not group_by_user_fwds_df.empty:
+    sns.set()
+    group_by_user_fwds_plot = group_by_user_fwds_df.plot(x='user', y='fwds_ratio', kind='bar', stacked=False)
+
+    for i, v_fwd_ratio in enumerate(group_by_user_fwds_df["fwds_ratio"]):
+        group_by_user_fwds_plot.text(i - .15, v_fwd_ratio, str(v_fwd_ratio)+"%")
+    draw()
+
 
 lambdafunc = lambda x: pd.Series([calendar.day_name[x['date'].weekday()], x['date'].hour])
 
@@ -196,8 +225,7 @@ if not heatmap_df.empty:
                 cmap="YlGnBu",
                 cbar=False
                 )
-
-    plt.show()
+    draw()
 else:
     logging.debug("This chat does not contain any datetime")
 
@@ -221,4 +249,47 @@ plt.figure(figsize=(8, 16))
 plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis("off")
 plt.tight_layout(pad=0)
-plt.show()
+draw()
+
+
+# df_pd.set_index('user').message.apply(pd.Series).stack().reset_index(level=0).rename(columns={0:'message'})
+# print(df_pd)
+word_count_by_user_df = df_pd[['user', 'message']][df_pd['message'].str.len() < 450 ]
+
+word_count_by_user_df = (word_count_by_user_df.drop('message', axis=1).join
+                         (
+                         word_count_by_user_df.message
+                         .apply(lambda x: re.sub(r"[^a-z\s]+", "", x.lower()))
+                         .apply(lambda x: ' '.join([w for w in x.split() if w not in common_words]))
+                         .str.split(expand=True)
+                         .stack()
+                         .reset_index(drop=True, level=1)
+                         .rename('message')
+                         ))
+
+word_count_by_user_df = word_count_by_user_df.dropna()
+
+#df['count'] = 1
+
+#df= df.groupby(['user', 'message']).sum()['count'].reset_index()
+#print(df.sort_values(by=['user', 'count'], ascending=False).head(2))
+
+
+
+word_count_by_user_df = (word_count_by_user_df.groupby(['user', 'message']).size().to_frame('count'))
+# print(df.info())
+# df=df.reset_index()
+# print(df.info())
+#print(df.groupby('user')['count'].nlargest(5))
+word_count_by_user_df=(word_count_by_user_df.sort_values(['user', 'count'], ascending=False).groupby('user').head(5).reset_index())
+word_count_by_user_df=(word_count_by_user_df[word_count_by_user_df['count'] > 7])
+logging.debug(word_count_by_user_df)
+if not word_count_by_user_df.empty:
+    sns.set()
+    group_by_user_wc_plot = word_count_by_user_df.plot.barh(x='user', y='count', stacked=False)
+
+    for i, (m, c) in enumerate(zip(word_count_by_user_df["message"], word_count_by_user_df["count"])):
+        # if (v_fwd > 5):
+        group_by_user_wc_plot.text(c, i - .15, m)
+
+    plt.show()
